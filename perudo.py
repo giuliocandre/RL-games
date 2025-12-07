@@ -96,12 +96,16 @@ def generate_policy_map(state_space, action_space):
             policy_map[state, a] = 1 # Equal weight per action
     return policy_map
 
-STATE_SPACE = generate_state_space()
-ACTION_SPACE = generate_action_space(STATE_SPACE)
-POLICY_MAP = generate_policy_map(STATE_SPACE, ACTION_SPACE)
+''' Generate all possible states, actions and initialize policy map 
+    NOT NEEDED
+'''
+#STATE_SPACE = generate_state_space()
+#ACTION_SPACE = generate_action_space(STATE_SPACE)
+#POLICY_MAP = generate_policy_map(STATE_SPACE, ACTION_SPACE)
+POLICY_MAP = {}
 
 def policy(state, epsilon=0.05):
-    actions = ACTION_SPACE[(state[0], state[1], state[2])]
+    actions = possible_actions_from_bid(state[0], state[1], state[2])
     if random.random() < epsilon:
         return random.choice(actions)
     else:
@@ -109,9 +113,11 @@ def policy(state, epsilon=0.05):
         max_ = -math.inf
         best_action = None
         for a in actions:
-            max_ = max(max_, POLICY_MAP[state, a])
-            if POLICY_MAP[state, a] == max_:
+            action_value = POLICY_MAP.get((state, a), 1)
+            if action_value > max_:
+                max_ = action_value
                 best_action = a
+
         return best_action
         
         
@@ -258,7 +264,7 @@ class RoboPlayer(Player):
         estimate = self.get_estimate_vector(total_dices)
 
         last_bid_quantity, last_bid_face = last_bid
-        possible_actions = ACTION_SPACE[(total_dices, last_bid_quantity, last_bid_face)]
+        possible_actions = possible_actions_from_bid(total_dices, last_bid_quantity, last_bid_face)
         best_action = DOUBT_ACTION
         best_quantity = -1
 
@@ -280,7 +286,7 @@ class RoboPlayer(Player):
         estimate = self.get_estimate_vector(total_dices)
 
         last_bid_quantity, last_bid_face = last_bid
-        possible_actions = ACTION_SPACE[(total_dices, last_bid_quantity, last_bid_face)]
+        possible_actions = possible_actions_from_bid(total_dices, last_bid_quantity, last_bid_face)
         best_action = DOUBT_ACTION
         best_quantity = total_dices + 1
 
