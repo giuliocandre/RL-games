@@ -73,7 +73,7 @@ def possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face):
                 if bid_quantity == min_next_bid_q and bid_face == last_bid_face:
                     continue
                 actions.add((bid_quantity, bid_face))
-        return actions
+        return list(actions)
 
 def generate_action_space(state_space):
     action_space = {}
@@ -85,7 +85,7 @@ def generate_action_space(state_space):
         if (action_space.get((tot_dices, last_bid_quantity, last_bid_face))):
             continue
         actions = possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face)
-        action_space[(tot_dices, last_bid_quantity, last_bid_face)] = list(actions)
+        action_space[(tot_dices, last_bid_quantity, last_bid_face)] = actions
     return action_space
 
 def generate_policy_map(state_space, action_space):
@@ -204,6 +204,10 @@ class RLPlayer(Player):
     def get_stats():
         return RLPlayer.WINS / RLPlayer.GAMES if RLPlayer.GAMES > 0 else 0
     
+    def track_stats(self):
+        self.track_stats_ = True
+        RLPlayer.GAMES += 1
+
     def make_action(self, total_dices, last_bid):
         state = [0] * (1 + 2 + 6)
         state[0] = total_dices
@@ -216,11 +220,13 @@ class RLPlayer(Player):
     
     def win(self):
         super().win()
-        RLPlayer.WINS += 1
+        if self.track_stats_:
+            RLPlayer.WINS += 1
 
     def __init__(self, name, n_dices=DICES_PER_PLAYER):
         super().__init__(name, n_dices)
-        RLPlayer.GAMES += 1
+        self.track_stats_ = False
+        
 '''
 Player that uses a static strategy:
 - other_dices = total_dices - self.n_dices
@@ -403,7 +409,7 @@ def train_against_random_models(n=10000, n_players=MAX_PLAYERS):
     others = random.choices(models, k=n_players - 1)
     return trainRL(n=n, models=others)
 
-def trainRL(n=10000, n_players=MAX_PLAYERS, models=[AggressiveRoboPlayer, ConservativeRoboPlayer]):
+def trainRL(n=10000, n_players=MAX_PLAYERS, opponent_models=[AggressiveRoboPlayer, ConservativeRoboPlayer]):
 
     # Reset RLPlayer stats
     RLPlayer.GAMES = 0
@@ -411,7 +417,8 @@ def trainRL(n=10000, n_players=MAX_PLAYERS, models=[AggressiveRoboPlayer, Conser
     
     for _ in range(n):
         rlplayer = RLPlayer("RL-Agent")
-        players = [rlplayer] + [m(f"Player-{i}") for i, m in enumerate(models[:n_players - 1])]
+        rlplayer.track_stats()
+        players = [rlplayer] + [m(f"Player-{i}") for i, m in enumerate(opponent_models[:n_players - 1])]
         game = Game(players, quiet=True)
         game.play_game()
     
