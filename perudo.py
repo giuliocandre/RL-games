@@ -56,7 +56,7 @@ def possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face):
         actions = set()
         
         min_next_bid_q = max(1, last_bid_quantity)
-        min_next_bid_f = max(1, last_bid_face)
+        min_next_bid_f = max(2, last_bid_face)
         # doubt action only if there was a last bid
         if last_bid_quantity > 0:
             actions.add(DOUBT_ACTION)
