@@ -413,7 +413,7 @@ class Game():
 def train_against_random_models(n=10000, n_players=MAX_PLAYERS):
     models = [AggressiveRoboPlayer, ConservativeRoboPlayer, RLPlayer]
     others = random.choices(models, k=n_players - 1)
-    return trainRL(n=n, models=others)
+    return trainRL(n=n, opponent_models=others)
 
 def trainRL(n=10000, n_players=MAX_PLAYERS, opponent_models=[AggressiveRoboPlayer, ConservativeRoboPlayer]):
 
