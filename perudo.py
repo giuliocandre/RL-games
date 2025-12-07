@@ -1,9 +1,12 @@
 import random
 import math
+import pickle
+
 MAX_PLAYERS = 4
 DICES_PER_PLAYER = 5
 DOUBT_ACTION = (-1, -1)
 JOLLY_FACE = 1
+TRAINING_EXPLORATION_RATE = 0.1
 
 '''
 RL Agent that learns how to play Perudo.
@@ -159,6 +162,7 @@ def is_legal_bid(last_bid, new_bid):
     return False
 
 class Player():
+    VISIT_MAP = {}
     def __init__(self, name, n_dices=DICES_PER_PLAYER):
         self.name = name
         self.n_dices = n_dices
@@ -177,8 +181,9 @@ class Player():
     def flush_history(self, final_reward):
         reward = final_reward
         for state, action in self.history[::-1]:
+            n = Player.VISIT_MAP.get((state, action), 1)
             cur = POLICY_MAP.get((state, action), 1)
-            POLICY_MAP[state, action] = cur + 0.1 * (reward - cur)
+            POLICY_MAP[state, action] = cur + min((1/n), 0.1) * (reward - cur)
             reward = POLICY_MAP[state, action]
 
     def lose(self):
@@ -197,6 +202,7 @@ class Player():
         state[2] = last_bid[1]
         state[3:] = self.dices
         state = tuple(state)
+        Player.VISIT_MAP[state, action] = Player.VISIT_MAP.get((state, action), 0) + 1
         self.history.append((state, action))
     
     def make_action(self, *args):
@@ -213,6 +219,9 @@ class RLPlayer(Player):
     def track_stats(self):
         self.track_stats_ = True
         RLPlayer.GAMES += 1
+    
+    def set_exploration_rate(self, epsilon):
+        self.epsilon = epsilon
 
     def make_action(self, total_dices, last_bid):
         state = [0] * (1 + 2 + 6)
@@ -221,7 +230,7 @@ class RLPlayer(Player):
         state[2] = last_bid[1]
         state[3:] = self.dices
         state = tuple(state)
-        action = policy(state)
+        action = policy(state, self.epsilon)
         return action
     
     def win(self):
@@ -232,6 +241,7 @@ class RLPlayer(Player):
     def __init__(self, name, n_dices=DICES_PER_PLAYER):
         super().__init__(name, n_dices)
         self.track_stats_ = False
+        self.set_exploration_rate(0.01)
         
 '''
 Player that uses a static strategy:
@@ -424,6 +434,7 @@ def trainRL(n=10000, n_players=MAX_PLAYERS, opponent_models=[AggressiveRoboPlaye
     for _ in range(n):
         rlplayer = RLPlayer("RL-Agent")
         rlplayer.track_stats()
+        rlplayer.set_exploration_rate(TRAINING_EXPLORATION_RATE) # Do 10% exploration during training
         players = [rlplayer] + [m(f"Player-{i}") for i, m in enumerate(opponent_models[:n_players - 1])]
         game = Game(players, quiet=True)
         game.play_game()
@@ -431,7 +442,13 @@ def trainRL(n=10000, n_players=MAX_PLAYERS, opponent_models=[AggressiveRoboPlaye
     return RLPlayer.get_stats()
 
 
-
+def save_policy():
+    with open("perudo_policy.pkl", "wb") as f:
+        pickle.dump(POLICY_MAP, f)
+    
+def load_policy():
+    with open("perudo_policy.pkl", "rb") as f:
+        return pickle.load(f)
 def main():
     print("Play against the trained RL agent!")
     
