@@ -173,8 +173,13 @@ class Player():
     def new_round(self):
         self.dices = random.choice(all_possible_dice_counts_table[self.n_dices])
 
+    def win_bid(self):
+        # Small reward for winning one bid
+        self.flush_history(1)
+
     def lose_dice(self):
         self.n_dices = max(0, self.n_dices - 1)
+        # Small penalty for losing a dice
         self.flush_history(-1)
         if self.n_dices == 0:
             self.lose()
@@ -387,6 +392,7 @@ class Game():
                     # Bidder wins
                     self.start_idx = current_player_idx
                     current_player.lose_dice()
+                    bidder.win_bid()
                     if (not current_player.is_alive()):
                         self.print(f"Player {current_player_idx} has been eliminated!")
                         self.players.pop(current_player_idx)
@@ -395,6 +401,7 @@ class Game():
                     # Doubter wins
                     self.start_idx = bidder_idx
                     bidder.lose_dice()
+                    current_player.win_bid()
                     if (not bidder.is_alive()):
                         self.print(f"Player {bidder_idx} has been eliminated!")
                         self.players.pop(bidder_idx)
