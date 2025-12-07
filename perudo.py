@@ -147,7 +147,7 @@ def is_legal_bid(last_bid, new_bid):
     min_bid_q = last_bid_quantity
     min_bid_f = last_bid_face
     if last_bid_face == JOLLY_FACE:
-        min_bid_q = 2*last_bid_quantity
+        min_bid_q = 2*last_bid_quantity + 1
         min_bid_f = 1
 
     if new_bid_quantity > min_bid_q and new_bid_face >= min_bid_f:
