@@ -317,8 +317,33 @@ class RoboPlayer(Player):
 
         return best_action
 
+    def safe_minimal_bid(self, total_dices, last_bid):
+        
+        # Do not make assumption on other players' dices
+        estimate = self.get_estimate_vector(self.n_dices)
+        
+        last_bid_quantity, last_bid_face = last_bid
+        possible_actions = possible_actions_from_bid(total_dices, last_bid_quantity, last_bid_face)
+        best_action = DOUBT_ACTION
+        best_quantity = total_dices + 1
+
+        for action in possible_actions:
+            bid_quantity, bid_face = action
+            if action == DOUBT_ACTION:
+                continue
+            if bid_quantity <= estimate[bid_face - 1]:
+                if bid_quantity < best_quantity:
+                    best_quantity = bid_quantity
+                    best_action = action
+
+        return best_action
+
     def make_action(self, total_dices, last_bid):
         pass
+
+class DoubterRoboPlayer(RoboPlayer):
+    def make_action(self, total_dices, last_bid):
+        return self.safe_minimal_bid(total_dices, last_bid)
 
 class AggressiveRoboPlayer(RoboPlayer):
     def make_action(self, total_dices, last_bid):
