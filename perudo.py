@@ -66,9 +66,10 @@ def possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face):
             min_next_bid_q = 2*last_bid_quantity + 1
             min_next_bid_f = 2
 
-        # special jolly bid            
-        for bid_quantity in range((min_next_bid_q // 2) + (min_next_bid_q % 2), tot_dices + 1):
-            actions.add((bid_quantity, JOLLY_FACE))
+        # special jolly bid (only from second bid onwards)
+        if last_bid_face != 0:        
+            for bid_quantity in range((min_next_bid_q // 2) + (min_next_bid_q % 2), tot_dices + 1):
+                actions.add((bid_quantity, JOLLY_FACE))
 
         # possible bids
         for bid_quantity in range(min_next_bid_q, tot_dices + 1):
