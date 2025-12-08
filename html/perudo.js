@@ -282,6 +282,49 @@ class DoubterRoboPlayer extends RoboPlayer {
     }
 }
 
+// Policy function to query Flask server
+async function policy(state) {
+    try {
+        // Convert state array to comma-separated string
+        const stateParam = state.join(',');
+        const response = await fetch(`/policy?state=${stateParam}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Return action as [quantity, face]
+        return data.action;
+    } catch (error) {
+        console.error('Error calling policy endpoint:', error);
+        // Fallback to doubt action if policy call fails
+        return DOUBT_ACTION;
+    }
+}
+
+// RLPlayer class that uses the policy endpoint
+class RLPlayer extends Player {
+    async makeAction(totalDices, lastBid) {
+        // Build state vector: [total_dices, last_bid_quantity, last_bid_face, ...dice_counts]
+        const state = [
+            totalDices,
+            lastBid[0],
+            lastBid[1],
+            ...this.dices
+        ];
+        
+        // Call policy function
+        const action = await policy(state);
+        return action;
+    }
+}
+
 // Game class
 class Game {
     constructor(players) {
@@ -312,6 +355,9 @@ class Game {
             
             let action;
             if (currentPlayer instanceof HumanPlayer) {
+                action = await currentPlayer.makeAction(totalDices, this.lastBid);
+            } else if (currentPlayer instanceof RLPlayer) {
+                // RLPlayer also returns a promise
                 action = await currentPlayer.makeAction(totalDices, this.lastBid);
             } else {
                 // Add delay for robot players
@@ -598,6 +644,9 @@ function startNewGame() {
             break;
         case 'doubter':
             opponent = new DoubterRoboPlayer('Doubter Bot');
+            break;
+        case 'rl':
+            opponent = new RLPlayer('RL Agent');
             break;
     }
     
