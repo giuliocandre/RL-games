@@ -341,6 +341,10 @@ class Game {
         console.log("Starting a new round...");
         clearMessages();
         
+        // Hide opponent dice section at start of new round
+        document.getElementById('opponentDiceSection').classList.add('hidden');
+        document.getElementById('continueSection').classList.add('hidden');
+        
         for (const p of this.players) {
             p.newRound();
         }
@@ -384,6 +388,12 @@ class Game {
                 showMessage(`Player ${this.currentPlayerIdx}, ${currentPlayer.name} doubted the last bid: ${q} ${f === JOLLY_FACE ? 'Jolly' : f}`, 'info');
                 showMessage(`Actual count for face ${f === JOLLY_FACE ? 'Jolly' : f}: ${actualCount}`, 'info');
 
+                // Show bidder's dice after doubt resolution (the player whose bid was doubted)
+                if (bidder && bidder !== humanPlayer) {
+                    renderOpponentDice(bidder.dices);
+                    document.getElementById('opponentDiceSection').classList.remove('hidden');
+                }
+
                 if (actualCount >= q) {
                     // Bidder wins
                     this.startIdx = this.currentPlayerIdx;
@@ -421,6 +431,14 @@ class Game {
                         }
                     }
                 }
+                
+                // Show continue button and wait for user to click
+                document.getElementById('continueSection').classList.remove('hidden');
+                await new Promise((resolve) => {
+                    continueResolve = resolve;
+                });
+                document.getElementById('continueSection').classList.add('hidden');
+                document.getElementById('opponentDiceSection').classList.add('hidden');
                 break;
             } else {
                 this.lastBid = action;
@@ -445,9 +463,7 @@ class Game {
         let gameOver = false;
         while (!gameOver) {
             gameOver = await this.playRound();
-            if (!gameOver) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
+            // Continue button will be clicked by user before next round starts
         }
     }
 }
@@ -455,6 +471,7 @@ class Game {
 // Global game instance
 let game = null;
 let humanPlayer = null;
+let continueResolve = null; // Promise resolver for continue button
 
 // UI Functions
 function renderDice(diceValue) {
@@ -511,6 +528,17 @@ function renderDice(diceValue) {
 
 function renderPlayerDice(dices) {
     const container = document.getElementById('playerDice');
+    container.innerHTML = '';
+    
+    for (let face = 0; face < 6; face++) {
+        for (let count = 0; count < dices[face]; count++) {
+            container.appendChild(renderDice(face + 1));
+        }
+    }
+}
+
+function renderOpponentDice(dices) {
+    const container = document.getElementById('opponentDice');
     container.innerHTML = '';
     
     for (let face = 0; face < 6; face++) {
@@ -621,12 +649,25 @@ function doubtBid() {
     showMessage('You doubt the last bid!', 'info');
 }
 
+function continueToNextRound() {
+    if (continueResolve) {
+        continueResolve();
+        continueResolve = null;
+    }
+}
+
 function resetGame() {
     document.getElementById('gameEndActions').classList.add('hidden');
+    document.getElementById('continueSection').classList.add('hidden');
+    document.getElementById('opponentDiceSection').classList.add('hidden');
     document.getElementById('gameSetup').classList.remove('hidden');
     document.getElementById('gameArea').classList.add('hidden');
     game = null;
     humanPlayer = null;
+    if (continueResolve) {
+        continueResolve();
+        continueResolve = null;
+    }
 }
 
 function startNewGame() {

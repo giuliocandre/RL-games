@@ -284,9 +284,18 @@
                 <div id="playerDice" class="dice-container"></div>
             </div>
 
+            <div id="opponentDiceSection" class="game-info hidden">
+                <h2>Opponent's Dice (After Doubt Resolution)</h2>
+                <div id="opponentDice" class="dice-container"></div>
+            </div>
+
             <div id="waitingMessage" class="message info hidden" style="text-align: center;">
                 Waiting for opponent's turn...
             </div>
+            <div id="continueSection" class="hidden" style="text-align: center; margin-top: 20px;">
+                <button id="continueButton" onclick="continueToNextRound()" style="padding: 15px 30px; font-size: 18px; background: #28a745; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">Continue to Next Round</button>
+            </div>
+            
             <div id="messageArea"></div>
 
             <div id="bidSection" class="bid-section">
