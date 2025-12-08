@@ -510,7 +510,11 @@ function updateUI(currentPlayerIdx, lastBid, totalDices) {
     }
     
     // Show bid section only for human player's turn
-    if (currentPlayerIdx === 0 && humanPlayer) {
+    // Check if current player is the human player object, not just index 0
+    const currentPlayer = game.players[currentPlayerIdx];
+    const isHumanPlayerTurn = currentPlayer === humanPlayer && humanPlayer !== null;
+    
+    if (isHumanPlayerTurn) {
         document.getElementById('bidSection').classList.remove('hidden');
         document.getElementById('waitingMessage').classList.add('hidden');
         document.getElementById('doubtButton').disabled = (q === 0 && f === 0);
