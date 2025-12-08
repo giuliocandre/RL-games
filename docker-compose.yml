@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  perudoservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: perudoservice
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
