@@ -296,6 +296,7 @@ class Game {
     async playRound() {
         this.currentRound++;
         console.log("Starting a new round...");
+        clearMessages();
         
         for (const p of this.players) {
             p.newRound();
@@ -334,6 +335,7 @@ class Game {
                     }
                 }
 
+                showMessage(`Player ${this.currentPlayerIdx}, ${currentPlayer.name} doubted the last bid: ${q} ${f === JOLLY_FACE ? 'Jolly' : f}`, 'info');
                 showMessage(`Actual count for face ${f === JOLLY_FACE ? 'Jolly' : f}: ${actualCount}`, 'info');
 
                 if (actualCount >= q) {
@@ -518,12 +520,17 @@ function updateUI(currentPlayerIdx, lastBid, totalDices) {
     }
 }
 
+function clearMessages() {
+    const messageArea = document.getElementById('messageArea');
+    messageArea.innerHTML = '';
+}
+
 function showMessage(text, type) {
     const messageArea = document.getElementById('messageArea');
     const message = document.createElement('div');
     message.className = `message ${type}`;
     message.textContent = text;
-    messageArea.innerHTML = '';
+    // messageArea.innerHTML = '';
     messageArea.appendChild(message);
 }
 
