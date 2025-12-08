@@ -35,21 +35,8 @@ for tot in range(1, DICES_PER_PLAYER + 1):
 
 
         
+POLICY_MAP = {}
 
-def generate_state_space(n_players=MAX_PLAYERS):
-    state_space = {}
-    for tot_dices in range(2, n_players * DICES_PER_PLAYER + 1):
-        cur_state = [0] * (1 + 2 + 6) # tot_dices + last bid (quantity, face) + own dices (6 faces) 
-        cur_state[0] = tot_dices
-        for n_dices in range(1, 6):
-            for dice_confs in all_possible_dice_counts_table.get(n_dices, []):
-                cur_state[3:] = dice_confs
-                for last_bid_quantity in range(0, tot_dices + 1):
-                    for last_bid_face in range(0, 7):
-                        cur_state[1] = last_bid_quantity
-                        cur_state[2] = last_bid_face
-                        state_space[tuple(cur_state)] = 0
-    return state_space
         
 def possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face):
         
@@ -79,34 +66,6 @@ def possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face):
                 actions.add((bid_quantity, bid_face))
         return list(actions)
 
-def generate_action_space(state_space):
-    action_space = {}
-    for state in state_space.keys():
-        tot_dices = state[0]
-        last_bid_quantity = state[1]
-        last_bid_face = state[2]
-        # Skip if already generated
-        if (action_space.get((tot_dices, last_bid_quantity, last_bid_face))):
-            continue
-        actions = possible_actions_from_bid(tot_dices, last_bid_quantity, last_bid_face)
-        action_space[(tot_dices, last_bid_quantity, last_bid_face)] = actions
-    return action_space
-
-def generate_policy_map(state_space, action_space):
-    policy_map = {}
-    for state in state_space.keys():
-        actions = action_space[(state[0], state[1], state[2])]
-        for a in actions:
-            policy_map[state, a] = 1 # Equal weight per action
-    return policy_map
-
-''' Generate all possible states, actions and initialize policy map 
-    NOT NEEDED
-'''
-#STATE_SPACE = generate_state_space()
-#ACTION_SPACE = generate_action_space(STATE_SPACE)
-#POLICY_MAP = generate_policy_map(STATE_SPACE, ACTION_SPACE)
-POLICY_MAP = {}
 
 def policy(state, epsilon=0.05):
     actions = possible_actions_from_bid(state[0], state[1], state[2])
@@ -175,12 +134,13 @@ class Player():
 
     def win_bid(self):
         # Small reward for winning one bid
-        self.flush_history(1)
+        # self.flush_history(1)
+        pass
 
     def lose_dice(self):
         self.n_dices = max(0, self.n_dices - 1)
         # Small penalty for losing a dice
-        self.flush_history(-1)
+        # self.flush_history(-1)
         if self.n_dices == 0:
             self.lose()
     
@@ -454,7 +414,7 @@ class Game():
                 input()
 
 def train_against_random_models(n=10000, n_players=MAX_PLAYERS):
-    models = [AggressiveRoboPlayer, ConservativeRoboPlayer, RLPlayer]
+    models = [AggressiveRoboPlayer, ConservativeRoboPlayer, DoubterRoboPlayer]
     others = random.choices(models, k=n_players - 1)
     return trainRL(n=n, opponent_models=others)
 
