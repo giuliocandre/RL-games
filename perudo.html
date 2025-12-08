@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perudo Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        .game-setup {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .game-setup select, .game-setup button {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            margin: 5px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .game-setup button {
+            background: #667eea;
+            color: white;
+            font-weight: bold;
+        }
+
+        .game-setup button:hover {
+            background: #5568d3;
+        }
+
+        .game-info {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .game-info h2 {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #667eea;
+        }
+
+        .dice-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .dice {
+            width: 60px;
+            height: 60px;
+            border: 3px solid #333;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            background: white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .dice.jolly {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
+            color: white;
+            border-color: #c92a2a;
+            font-size: 35px;
+            line-height: 1;
+        }
+
+        .dice-face {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            width: 100%;
+            height: 100%;
+            padding: 5px;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #333;
+            margin: auto;
+        }
+
+        .dice.jolly .dot {
+            display: none;
+        }
+
+        .bid-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #ffc107;
+        }
+
+        .bid-section h3 {
+            margin-bottom: 15px;
+            color: #856404;
+        }
+
+        .last-bid {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #856404;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .bid-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .bid-inputs input, .bid-inputs select {
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+        }
+
+        .bid-inputs button {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #ffc107;
+            color: #333;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .bid-inputs button:hover {
+            background: #ffb300;
+        }
+
+        .doubt-button {
+            padding: 15px;
+            font-size: 18px;
+            font-weight: bold;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .doubt-button:hover {
+            background: #c82333;
+        }
+
+        .doubt-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-weight: bold;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .player-status {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+
+        .player-status.current {
+            border-left-color: #ffc107;
+            background: #fff9e6;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 600px) {
+            .dice {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+
+            h1 {
+                font-size: 1.5em;
+            }
+
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎲 Perudo Game</h1>
+        
+        <div id="gameSetup" class="game-setup">
+            <select id="opponentSelect">
+                <option value="aggressive">Aggressive RoboPlayer</option>
+                <option value="conservative">Conservative RoboPlayer</option>
+                <option value="doubter">Doubter RoboPlayer</option>
+            </select>
+            <button onclick="startNewGame()">Start New Game</button>
+        </div>
+
+        <div id="gameArea" class="hidden">
+            <div class="game-info">
+                <h2>Game Status</h2>
+                <div id="playerStatus"></div>
+            </div>
+
+            <div class="game-info">
+                <h2>Your Dice</h2>
+                <div id="playerDice" class="dice-container"></div>
+            </div>
+
+            <div id="waitingMessage" class="message info hidden" style="text-align: center;">
+                Waiting for opponent's turn...
+            </div>
+            <div id="bidSection" class="bid-section">
+                <h3>Make Your Bid</h3>
+                <div id="lastBid" class="last-bid">No bid yet</div>
+                <div class="bid-inputs">
+                    <input type="number" id="bidQuantity" placeholder="Quantity" min="1">
+                    <select id="bidFace">
+                        <option value="1">Jolly (1)</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                        <option value="6">6</option>
+                    </select>
+                    <button onclick="makeBid()">Make Bid</button>
+                    <button id="doubtButton" class="doubt-button" onclick="doubtBid()" disabled>Doubt</button>
+                </div>
+            </div>
+
+            <div id="messageArea"></div>
+            <div id="gameEndActions" class="hidden" style="text-align: center; margin-top: 20px;">
+                <button onclick="resetGame()" style="padding: 15px 30px; font-size: 18px; background: #667eea; color: white; border: none; border-radius: 10px; cursor: pointer; font-weight: bold;">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="perudo.js"></script>
+</body>
+</html>
