@@ -42,7 +42,7 @@ function isLegalBid(lastBid, newBid) {
     const [lastBidQuantity, lastBidFace] = lastBid;
     const [newBidQuantity, newBidFace] = newBid;
 
-    if (lastBidQuantity === 0 && lastBidFace === 0) {
+    if (lastBidQuantity === 0 && lastBidFace === 0 && newBidFace != JOLLY_FACE) {
         return true;
     }
 
@@ -388,11 +388,9 @@ class Game {
                 showMessage(`Player ${this.currentPlayerIdx}, ${currentPlayer.name} doubted the last bid: ${q} ${f === JOLLY_FACE ? 'Jolly' : f}`, 'info');
                 showMessage(`Actual count for face ${f === JOLLY_FACE ? 'Jolly' : f}: ${actualCount}`, 'info');
 
-                // Show bidder's dice after doubt resolution (the player whose bid was doubted)
-                if (bidder && bidder !== humanPlayer) {
-                    renderOpponentDice(bidder.dices);
-                    document.getElementById('opponentDiceSection').classList.remove('hidden');
-                }
+                renderOpponentDice(bidder.dices);
+                document.getElementById('opponentDiceSection').classList.remove('hidden');
+                document.getElementById('waitingMessage').classList.add('hidden');
 
                 if (actualCount >= q) {
                     // Bidder wins
