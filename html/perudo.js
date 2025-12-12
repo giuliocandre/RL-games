@@ -42,7 +42,11 @@ function isLegalBid(lastBid, newBid) {
     const [lastBidQuantity, lastBidFace] = lastBid;
     const [newBidQuantity, newBidFace] = newBid;
 
-    if (lastBidQuantity === 0 && lastBidFace === 0 && newBidFace != JOLLY_FACE) {
+    if (lastBidQuantity === 0 && newBidFace === JOLLY_FACE) {
+        return false;
+    }
+
+    if (lastBidQuantity === 0 && lastBidFace === 0) {
         return true;
     }
 
@@ -388,7 +392,8 @@ class Game {
                 showMessage(`Player ${this.currentPlayerIdx}, ${currentPlayer.name} doubted the last bid: ${q} ${f === JOLLY_FACE ? 'Jolly' : f}`, 'info');
                 showMessage(`Actual count for face ${f === JOLLY_FACE ? 'Jolly' : f}: ${actualCount}`, 'info');
 
-                renderOpponentDice(bidder.dices);
+                // This section is used by the human player to see the opponent's dice after the doubt resolution.
+                renderOpponentDice(opponent.dices);
                 document.getElementById('opponentDiceSection').classList.remove('hidden');
                 document.getElementById('waitingMessage').classList.add('hidden');
 
@@ -469,6 +474,7 @@ class Game {
 // Global game instance
 let game = null;
 let humanPlayer = null;
+let opponent = null;
 let continueResolve = null; // Promise resolver for continue button
 
 // UI Functions
@@ -606,7 +612,7 @@ function showMessage(text, type) {
     const message = document.createElement('div');
     message.className = `message ${type}`;
     message.textContent = text;
-    // messageArea.innerHTML = '';
+    messageArea.innerHTML = '';
     messageArea.appendChild(message);
 }
 
@@ -672,7 +678,6 @@ function startNewGame() {
     const opponentType = document.getElementById('opponentSelect').value;
     
     humanPlayer = new HumanPlayer('You');
-    let opponent;
     
     switch (opponentType) {
         case 'aggressive':
