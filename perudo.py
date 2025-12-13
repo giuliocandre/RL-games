@@ -2,8 +2,10 @@ import random
 import math
 import pickle
 
-MAX_PLAYERS = 4
+MAX_PLAYERS = 6
 DICES_PER_PLAYER = 5
+# All possible number of bids
+MAX_ACTION_SIZE = MAX_PLAYERS * DICES_PER_PLAYER * 6
 DOUBT_ACTION = (-1, -1)
 JOLLY_FACE = 1
 TRAINING_EXPLORATION_RATE = 0.1
@@ -161,6 +163,9 @@ class Player():
     def is_alive(self):
         return self.n_dices > 0
     
+    def remember(self, state, action):
+        self.history.append((state, action))
+
     def track_action(self, total_dices, last_bid, action):
         state = [0] * (1 + 2 + 6)
         state[0] = total_dices
@@ -169,7 +174,7 @@ class Player():
         state[3:] = self.dices
         state = tuple(state)
         Player.VISIT_MAP[state, action] = Player.VISIT_MAP.get((state, action), 0) + 1
-        self.history.append((state, action))
+        self.remember(state, action)
     
     def make_action(self, *args):
         pass
