@@ -18,6 +18,7 @@ COPY perudo.py .
 COPY perudo_policy.pkl .
 COPY dqnmodel.dat .
 COPY html/ ./html/
+COPY dqn.py .
 
 # Expose port 5000 (Flask default)
 EXPOSE 5000
