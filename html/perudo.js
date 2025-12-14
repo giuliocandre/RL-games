@@ -312,6 +312,32 @@ async function policy(state) {
     }
 }
 
+// DQN Policy function to query Flask server
+async function dqnPolicy(state) {
+    try {
+        // Convert state array to comma-separated string
+        const stateParam = state.join(',');
+        const response = await fetch(`/dqn_policy?state=${stateParam}`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error);
+        }
+        
+        // Return action as [quantity, face]
+        return data.action;
+    } catch (error) {
+        console.error('Error calling dqn_policy endpoint:', error);
+        // Fallback to doubt action if policy call fails
+        return DOUBT_ACTION;
+    }
+}
+
 // RLPlayer class that uses the policy endpoint
 class RLPlayer extends Player {
     async makeAction(totalDices, lastBid) {
@@ -325,6 +351,23 @@ class RLPlayer extends Player {
         
         // Call policy function
         const action = await policy(state);
+        return action;
+    }
+}
+
+// DQNPlayer class that uses the dqn_policy endpoint
+class DQNPlayer extends Player {
+    async makeAction(totalDices, lastBid) {
+        // Build state vector: [total_dices, last_bid_quantity, last_bid_face, ...dice_counts]
+        const state = [
+            totalDices,
+            lastBid[0],
+            lastBid[1],
+            ...this.dices
+        ];
+        
+        // Call dqnPolicy function
+        const action = await dqnPolicy(state);
         return action;
     }
 }
@@ -364,8 +407,8 @@ class Game {
             let action;
             if (currentPlayer instanceof HumanPlayer) {
                 action = await currentPlayer.makeAction(totalDices, this.lastBid);
-            } else if (currentPlayer instanceof RLPlayer) {
-                // RLPlayer also returns a promise
+            } else if (currentPlayer instanceof RLPlayer || currentPlayer instanceof DQNPlayer) {
+                // RLPlayer and DQNPlayer also return a promise
                 action = await currentPlayer.makeAction(totalDices, this.lastBid);
             } else {
                 // Add delay for robot players
@@ -691,6 +734,9 @@ function startNewGame() {
             break;
         case 'rl':
             opponent = new RLPlayer('RL Agent');
+            break;
+        case 'dqn':
+            opponent = new DQNPlayer('DQN Agent');
             break;
     }
     
