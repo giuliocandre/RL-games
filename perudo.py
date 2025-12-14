@@ -179,6 +179,19 @@ class Player():
     def make_action(self, *args):
         pass
 
+def action_to_n(q, f):
+    return (q - 1)*6 + (f - 1) 
+
+def n_to_action(n):
+    # There are N_dices * N_faces possible actions
+    # At most N_DICES = 5*6 = 30,
+    # tot space size = 30*6 = 180
+    assert(n < MAX_PLAYERS*DICES_PER_PLAYER)
+    MAX_DICES = 30
+    bid_f = n % 6 + 1
+    bid_q = n // 6 + 1
+    return (bid_q, bid_f)
+
 class RLPlayer(Player):
     GAMES = 0
     WINS = 0
