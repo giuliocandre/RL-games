@@ -2,10 +2,10 @@ import random
 import math
 import pickle
 
-MAX_PLAYERS = 6
+MAX_PLAYERS = 2
 DICES_PER_PLAYER = 5
-# All possible number of bids
-MAX_ACTION_SIZE = MAX_PLAYERS * DICES_PER_PLAYER * 6
+# All possible number of bids + 1 (doubt action)
+MAX_ACTION_SIZE = 1 + MAX_PLAYERS * DICES_PER_PLAYER * 6
 DOUBT_ACTION = (-1, -1)
 JOLLY_FACE = 1
 TRAINING_EXPLORATION_RATE = 0.1
@@ -125,12 +125,15 @@ def is_legal_bid(last_bid, new_bid):
 
 class Player():
     VISIT_MAP = {}
-    def __init__(self, name, n_dices=DICES_PER_PLAYER):
+    def __init__(self, name):
         self.name = name
-        self.n_dices = n_dices
         self.history = []
-        self.new_round()
+        self.new_episode()
     
+    def new_episode(self):
+        self.n_dices = DICES_PER_PLAYER
+        self.new_round()
+
     def new_round(self):
         self.dices = random.choice(all_possible_dice_counts_table[self.n_dices])
 
@@ -180,17 +183,35 @@ class Player():
         pass
 
 def action_to_n(q, f):
-    return (q - 1)*6 + (f - 1) 
+    if (q, f) == DOUBT_ACTION:
+        return 0
+
+    a = 1 + (q - 1)*6 + (f - 1) 
+    assert a > 0 and a < MAX_ACTION_SIZE, f"(q={q}, f={f}), a = {a} out of bounds"
+    return a
 
 def n_to_action(n):
     # There are N_dices * N_faces possible actions
     # At most N_DICES = 5*6 = 30,
     # tot space size = 30*6 = 180
-    assert(n < MAX_PLAYERS*DICES_PER_PLAYER)
-    MAX_DICES = 30
+    if n == 0:
+        return DOUBT_ACTION
+    
+    n = n - 1
+    assert n < MAX_ACTION_SIZE, f"(n={n}) should be less than 180"
     bid_f = n % 6 + 1
     bid_q = n // 6 + 1
     return (bid_q, bid_f)
+
+def test_action_conversion():
+    for q in range(1, MAX_PLAYERS * DICES_PER_PLAYER + 1):
+        for f in range(1, 7):
+            n = action_to_n(q, f)
+            aq, af = n_to_action(n)
+            assert (q, f) == (aq, af), f"Failed conversion for (q={q}, f={f}): got (q={aq}, f={af})"
+    n = action_to_n(*DOUBT_ACTION)
+    aq, af = n_to_action(n)
+    assert (aq, af) == DOUBT_ACTION, f"Failed conversion for DOUBT_ACTION: got (q={aq}, f={af})"
 
 class RLPlayer(Player):
     GAMES = 0
@@ -222,8 +243,8 @@ class RLPlayer(Player):
         if self.track_stats_:
             RLPlayer.WINS += 1
 
-    def __init__(self, name, n_dices=DICES_PER_PLAYER):
-        super().__init__(name, n_dices)
+    def __init__(self, name):
+        super().__init__(name)
         self.track_stats_ = False
         self.set_exploration_rate(0.01)
         
@@ -355,6 +376,8 @@ class Game():
         self.n_players = len(players)
         self.start_idx = 0
         self.quiet = quiet
+        for p in self.players:
+            p.new_episode()
     
     def print(self, str_):
         if self.quiet:

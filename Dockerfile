@@ -16,6 +16,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY app.py .
 COPY perudo.py .
 COPY perudo_policy.pkl .
+COPY dqnmodel.dat .
 COPY html/ ./html/
 
 # Expose port 5000 (Flask default)
