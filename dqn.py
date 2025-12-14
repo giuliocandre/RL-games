@@ -4,6 +4,7 @@ from perudo import (
     possible_actions_from_bid, 
     action_to_n, n_to_action, 
     Player, RLPlayer, AggressiveRoboPlayer, ConservativeRoboPlayer,
+    DoubterRoboPlayer, HumanPlayer,
     load_policy, POLICY_MAP,
     MAX_ACTION_SIZE, policy)
 import random
@@ -43,7 +44,7 @@ def make_batch(transitions):
     )
 
 class DQNPlayer(Player):
-    def __init__(self, name="DQNPlayer", epsilon=1):
+    def __init__(self, name="DQNPlayer", epsilon=0.01):
         super().__init__(name)
         self.state_size = 9 # (tot_dices, last_bid_q, last_bid_f, ...face_counts)
         self.action_size = MAX_ACTION_SIZE
@@ -113,6 +114,11 @@ class DQNPlayer(Player):
         q_values = self.predict_q_values(state)
         return torch.argmax(q_values).item()
 
+class CachedDQNPlayer(DQNPlayer):
+    def __init__(self, name):
+        super().__init__(f"CachedDQN-{name}", epsilon=0.02)
+        load_checkpoint("./dqnmodel.dat", self.model)
+
 
 def dqn_update(online_net, target_net, optimizer, batch, gamma=0.99):
     """
@@ -144,10 +150,19 @@ def dqn_update(online_net, target_net, optimizer, batch, gamma=0.99):
 
     # max_a' Q_target(s', a')
     with torch.no_grad():
-        q_next = target_net(next_states)
-        q_next[~next_legal_masks] = -1e9
-        max_q_next = q_next.max(dim=1)[0]
-        target = rewards + gamma * (1 - dones) * max_q_next
+        # Action selection (ONLINE net)
+        next_q_online = online_net(next_states)
+        next_q_online[~next_legal_masks] = -1e9
+        next_actions = next_q_online.argmax(dim=1)
+
+        # Action evaluation (TARGET net)
+        next_q_target = target_net(next_states)
+        next_q_target[~next_legal_masks] = -1e9
+        next_q_values = next_q_target.gather(
+            1, next_actions.unsqueeze(1)
+        ).squeeze(1)
+
+        target = rewards + gamma * (1 - dones) * next_q_values
 
     # Huber loss
     loss = F.smooth_l1_loss(q_sa, target)
@@ -194,14 +209,17 @@ class ReplayBuffer:
             )
 
 
+
+
+def random_opponent(name):
+    rnd_model = random.choice([AggressiveRoboPlayer, ConservativeRoboPlayer, RLPlayer, DoubterRoboPlayer])
+    return rnd_model(name)
+
 def TrainDQN(OnlineDQNPlayer = None, num_episodes=10_000, opponent_model=AggressiveRoboPlayer):
-    # Load tabular MDP policy map from disk
-    POLICY_MAP = load_policy()
 
     if not OnlineDQNPlayer:
         OnlineDQNPlayer = DQNPlayer("OnlineDQNPlayer", epsilon=1)
 
-    replay_buffer = ReplayBuffer(capacity=100_000)
 
     online_net = OnlineDQNPlayer.model
     optimizer = torch.optim.Adam(
@@ -217,12 +235,13 @@ def TrainDQN(OnlineDQNPlayer = None, num_episodes=10_000, opponent_model=Aggress
     target_update_freq = 1_000  # steps
 
     global_step = 0
+    win_rate = 0
     for episode in range(num_episodes):
         random_player = opponent_model("RandomOpponent")
         game = Game([OnlineDQNPlayer, random_player], quiet=True)
         done = False
         while not done:
-            done = game.play_round()
+            done = game.play_round()            
             global_step += 1
 
 
@@ -245,11 +264,12 @@ def TrainDQN(OnlineDQNPlayer = None, num_episodes=10_000, opponent_model=Aggress
             # TARGET NETWORK UPDATE
             if global_step % target_update_freq == 0:
                 TargetDQNPlayer.model.load_state_dict(online_net.state_dict())
-                print(f"Episode {episode}, Step {global_step}, Loss: {loss:.4f}")
+                print(f"Episode {episode}, Step {global_step}, Loss: {loss:.4f}, Win rate: {win_rate/episode:.4f}")
 
         # ε decay per episode
         OnlineDQNPlayer.epsilon *= epsilon_decay
-
+        if OnlineDQNPlayer.is_alive():
+                win_rate += 1
     return OnlineDQNPlayer
 
 
@@ -279,3 +299,10 @@ def load_checkpoint(path, online_net, optimizer=None, device="cpu"):
     step = checkpoint.get("step", None)
 
     return epsilon, step
+
+if __name__ == "__main__":
+    # Load tabular MDP policy map from disk
+    POLICY_MAP = load_policy()
+
+    # Big replay buffer for all experiences ever
+    replay_buffer = ReplayBuffer(capacity=100_000)
