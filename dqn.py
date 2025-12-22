@@ -50,16 +50,18 @@ class DQNPlayer(Player):
         self.action_size = MAX_ACTION_SIZE
         self.model = self._build_model()
         self.epsilon = epsilon  # Exploration rate
-        self.epsilon_min = 0.01
+        self.epsilon_min = 0.05
         self.epsilon_decay = 0.995
 
     def _build_model(self):
         model = nn.Sequential(
-            nn.Linear(self.state_size, 128),
+            nn.Linear(self.state_size, 256),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(256, 256),
             nn.ReLU(),
-            nn.Linear(128, self.action_size)
+            nn.Linear(256, 256),
+            nn.ReLU(),
+            nn.Linear(256, self.action_size)
         )
 
         return model
@@ -82,11 +84,11 @@ class DQNPlayer(Player):
         self.update_last_reward(-1, True)
 
     def lose_dice(self):
-        self.update_last_reward(-0.1, False)
+        self.update_last_reward(-0.5, False)
         super().lose_dice()
 
     def win_bid(self):
-        self.update_last_reward(0.1, False)
+        self.update_last_reward(0.5, False)
         super().win_bid()
     
     def make_action(self, total_dices, last_bid):
@@ -97,10 +99,11 @@ class DQNPlayer(Player):
         state[3:] = self.dices
         state = tuple(state)
 
-        if np.random.rand() <= max(self.epsilon, self.epsilon_min):
-            return policy(state, 1)
+# Remove e-greedy part
+#        if np.random.rand() <= max(self.epsilon, self.epsilon_min):
+#            return policy(state, 1)
 
-        action = n_to_action(self.predict_action(state))
+        action = n_to_action(self.predict_action_softmax(state))
         return action
 
     def predict_q_values(self, state):
@@ -109,6 +112,18 @@ class DQNPlayer(Player):
         q_values = self.model(i)
         q_values[~mask] = -1e9
         return q_values
+
+    def predict_action_softmax(self, state):
+        # Mask illegal actions
+        q_values = self.predict_q_values(state)
+        # Stability trick
+        masked_q = q_values / max(self.epsilon, self.epsilon_min)
+        masked_q -= masked_q.max()
+
+        probs = F.softmax(masked_q, dim=0)
+
+        action = torch.multinomial(probs, 1).item()
+        return action
 
     def predict_action(self, state):
         q_values = self.predict_q_values(state)
@@ -264,7 +279,7 @@ def TrainDQN(OnlineDQNPlayer = None, num_episodes=10_000, opponent_model=Aggress
             # TARGET NETWORK UPDATE
             if global_step % target_update_freq == 0:
                 TargetDQNPlayer.model.load_state_dict(online_net.state_dict())
-                print(f"Episode {episode}, Step {global_step}, Loss: {loss:.4f}, Win rate: {win_rate/episode:.4f}")
+                print(f"Episode {episode}, Step {global_step}, Epsilon: {OnlineDQNPlayer.epsilon:4f} Loss: {loss:.4f}, Win rate: {win_rate/episode:.4f}")
 
         # ε decay per episode
         OnlineDQNPlayer.epsilon *= epsilon_decay
