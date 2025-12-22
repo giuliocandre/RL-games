@@ -283,6 +283,10 @@ class RoboPlayer(Player):
         best_action = DOUBT_ACTION
         best_quantity = -1
 
+        # Never doubt a bid for which I have enough dices
+        if estimate[last_bid_face - 1] >= last_bid_quantity:
+            best_action = (last_bid_quantity + 1, last_bid_face)
+
         for action in possible_actions:
             bid_quantity, bid_face = action
             if action == DOUBT_ACTION:
@@ -303,16 +307,20 @@ class RoboPlayer(Player):
         last_bid_quantity, last_bid_face = last_bid
         possible_actions = possible_actions_from_bid(total_dices, last_bid_quantity, last_bid_face)
         best_action = DOUBT_ACTION
-        best_quantity = total_dices + 1
+        best_buffer = 0
+
+        # Never doubt a bid for which I have enough dices
+        if estimate[last_bid_face - 1] >= last_bid_quantity:
+            best_action = (last_bid_quantity + 1, last_bid_face)
 
         for action in possible_actions:
             bid_quantity, bid_face = action
             if action == DOUBT_ACTION:
                 continue
-            if bid_quantity <= estimate[bid_face - 1]:
-                if bid_quantity < best_quantity:
-                    best_quantity = bid_quantity
-                    best_action = action
+            buffer = estimate[bid_face - 1] - bid_quantity
+            if buffer > best_buffer:
+                best_buffer = buffer
+                best_action = action
 
         return best_action
 
@@ -325,6 +333,9 @@ class RoboPlayer(Player):
         possible_actions = possible_actions_from_bid(total_dices, last_bid_quantity, last_bid_face)
         best_action = DOUBT_ACTION
         best_quantity = total_dices + 1
+        # Never doubt a bid for which I have enough dices
+        if estimate[last_bid_face - 1] >= last_bid_quantity:
+            best_action = (last_bid_quantity + 1, last_bid_face)
 
         for action in possible_actions:
             bid_quantity, bid_face = action

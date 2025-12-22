@@ -204,6 +204,10 @@ class RoboPlayer extends Player {
         let bestAction = DOUBT_ACTION;
         let bestQuantity = -1;
 
+        // Never doubt a bid for which I have enough dices
+        if (estimate[lastBidFace - 1] >= lastBidQuantity)
+            bestAction = [lastBidQuantity + 1, lastBidFace];
+    
         for (const action of possibleActions) {
             const [bidQuantity, bidFace] = action;
             if (arraysEqual(action, DOUBT_ACTION)) {
@@ -225,18 +229,21 @@ class RoboPlayer extends Player {
         const [lastBidQuantity, lastBidFace] = lastBid;
         const possibleActions = possibleActionsFromBid(totalDices, lastBidQuantity, lastBidFace);
         let bestAction = DOUBT_ACTION;
-        let bestQuantity = totalDices + 1;
+        let bestBuffer = 0;
+
+        // Never doubt a bid for which I have enough dices
+        if (estimate[lastBidFace - 1] >= lastBidQuantity)
+                bestAction = [lastBidQuantity + 1, lastBidFace];
 
         for (const action of possibleActions) {
             const [bidQuantity, bidFace] = action;
             if (arraysEqual(action, DOUBT_ACTION)) {
                 continue;
             }
-            if (bidQuantity <= estimate[bidFace - 1]) {
-                if (bidQuantity < bestQuantity) {
-                    bestQuantity = bidQuantity;
-                    bestAction = action;
-                }
+            let buffer = estimate[bidFace - 1] - bidQuantity
+            if (buffer > bestBuffer) {
+                bestBuffer = buffer;
+                bestAction = action;
             }
         }
 
@@ -250,6 +257,10 @@ class RoboPlayer extends Player {
         let bestAction = DOUBT_ACTION;
         let bestQuantity = totalDices + 1;
 
+        // Never doubt a bid for which I have enough dices
+        if (estimate[lastBidFace - 1] >= lastBidQuantity)
+            bestAction = [lastBidQuantity + 1, lastBidFace];
+    
         for (const action of possibleActions) {
             const [bidQuantity, bidFace] = action;
             if (arraysEqual(action, DOUBT_ACTION)) {
